@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Robot Map</title>
+    <style>
+        /* Styling for the body */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Styling for the buttons */
+        #buttons-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        /* Styling for the direction buttons */
+        .direction-button {
+            font-size: 16px;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Robot Map</h1>
+
+    <!-- Canvas element for drawing the robot's path -->
+    <canvas id="mapCanvas" width="800" height="500"></canvas>
+    <br>
+
+    <!-- Container for direction buttons -->
+    <div id="buttons-container">
+        <button onclick="moveRobot('Left')" class="direction-button">Left</button>
+
+        <button onclick="moveRobot('Forward')" class="direction-button">Forward</button>
+
+        <button onclick="moveRobot('Right')" class="direction-button">Right</button>
+    </div>
+
+    <button onclick="moveRobot('Backward')" class="direction-button">Backward</button>
+    <br>
+
+    <!-- Text box to enter the distance in meters -->
+    <input type="text" id="distanceInput" placeholder="Enter distance in meters">
+
+    <!-- Button to save the robot's path to the database -->
+    <button onclick="saveToDatabase()">Save to Database</button>
+
+    <!-- Button to delete the robot's map -->
+    <button onclick="deleteMap()">Delete Map</button>
+
+    <script>
+        // Get the canvas element and its context
+        var canvas = document.getElementById("mapCanvas");
+        var ctx = canvas.getContext("2d");
+
+        var scale = 20; // Increase the scale for longer line drawn
+
+        // Array to store the robot path
+        var robotPath = [];
+
+        // Function to draw the robot path
+        function drawMap() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, canvas.height / 2); // Move to the center of the canvas
+            ctx.lineWidth = 3; // The line thickness
+
+            var prevX = canvas.width / 2; // Initialize the previous X coordinate
+            var prevY = canvas.height / 2; // Initialize the previous Y coordinate
+
+            // Loop through the robot's path and draw each movement
+            for (var i = 0; i < robotPath.length; i++) {
+                var movement = robotPath[i];
+                var direction = movement.direction;
+                var distance = movement.distance * scale;
+
+                // Update the previous X and Y coordinates based on the movement direction and distance
+                switch (direction) {
+                    case "Right":
+                        prevX += distance;
+                        break;
+                    case "Forward":
+                        prevY -= distance;
+                        break;
+                    case "Backward":
+                        prevY += distance;
+                        break;
+                    case "Left":
+                        prevX -= distance;
+                        break;
+                }
+
+                // Draw a line to the updated X and Y coordinates
+                ctx.lineTo(prevX, prevY);
+                ctx.stroke();
+            }
+        }
+
+        // Function to move the robot in the direction and distance inserted
+        function moveRobot(direction) {
+            // Get the distance input value from the input field
+            var distanceInput = document.getElementById("distanceInput").value;
+            var distance = parseFloat(distanceInput);
+
+            // Validate the distance input
+            if (isNaN(distance) || distance <= 0) {
+                alert("Invalid distance value.");
+                return;
+            }
+
+            // Add the movement to the robot path array
+            robotPath.push({ direction: direction, distance: distance });
+
+            // Draw the updated robot path on the canvas
+            drawMap();
+        }
+
+        // Function to delete the robot map
+        function deleteMap() {
+            robotPath = []; // Clear the robot path array
+            drawMap(); // Redraw the empty canvas to clear the path
+        }
+
+        // Function to save the robot path data to the database using AJAX
+        function saveToDatabase() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "save_data.php", true);
+            xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+            // Define the callback function when the AJAX request is completed
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    alert(xhr.responseText);
+                }
+            };
+
+            // Convert the robot path array to a JSON string and send it as data in the AJAX request
+            xhr.send("data=" + JSON.stringify(robotPath));
+        }
+    </script>
+</body>
+</html>
